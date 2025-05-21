@@ -47,7 +47,6 @@ service:
 
 # Secret Configuration
 secrets:
-  dbHostname: main
   dbName: postgres
   dbUsername: postgres
   dbPassword: "CHANGEME!!!"
