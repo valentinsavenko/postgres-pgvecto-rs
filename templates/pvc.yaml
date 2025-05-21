@@ -4,7 +4,7 @@ metadata:
   name: "{{ .Release.Name }}-postgres-db-pvc"
   namespace: {{ .Values.namespace }}
   labels:
-    app: {{ .Release.Name }}
+    app: "{{ .Release.Name }}-postgrespg"
 spec:
   accessModes: {{ toYaml .Values.persistence.accessModes | nindent 4 }}
   resources:

@@ -4,16 +4,16 @@ metadata:
   name: "{{ .Release.Name }}-postgrespg"
   namespace: {{ .Values.namespace }}
   labels:
-    app: postgrespg
+    app: "{{ .Release.Name }}-postgrespg"
 spec:
   replicas: {{ .Values.postgres.replicas }}
   selector:
     matchLabels:
-      app: postgrespg
+      app: "{{ .Release.Name }}-postgrespg"
   template:
     metadata:
       labels:
-        app: postgrespg
+        app: "{{ .Release.Name }}-postgrespg"
     spec:
       containers:
         - name: postgres
