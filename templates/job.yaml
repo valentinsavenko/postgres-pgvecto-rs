@@ -51,6 +51,6 @@ spec:
       volumes:
         - name: backup-storage
           persistentVolumeClaim:
-            claimName: postgres-db-pvc
+            claimName: "{{ .Release.Name }}-postgres-db-pvc"
       restartPolicy: OnFailure
 {{- end }}
