@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: "{{ .Release.Name }}-postgres-backup"
+  namespace: {{ .Values.namespace }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: backup
+              image: "{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}"
+              command:
+                - sh
+                - -c
+                - |
+                  BACKUP_FILE=/backups/${HELM_RELEASE_NAME}_backup_$(date +%Y-%m-%d_%H-%M-%S).sql
+                  pg_dump -h ${DB_HOSTNAME} -U ${POSTGRES_USER} ${POSTGRES_DB} > $BACKUP_FILE
+                  echo "Backup created: $BACKUP_FILE"
+                  ls -t /backups/${HELM_RELEASE_NAME}_backup_*.sql | tail -n +{{ add .Values.backup.maxBackups 1 }} | xargs -I {} rm -f {}
+              env:
+                - name: HELM_RELEASE_NAME
+                  value: "{{ .Release.Name }}"
+                - name: DB_HOSTNAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: "{{ .Release.Name }}-db-env"
+                      key: DB_HOSTNAME
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: "{{ .Release.Name }}-db-env"
+                      key: DB_USERNAME
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: "{{ .Release.Name }}-db-env"
+                      key: DB_PASSWORD
+                - name: POSTGRES_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: "{{ .Release.Name }}-db-env"
+                      key: DB_postgrespg_NAME
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backups
+          volumes:
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: postgres-db-pvc
+          restartPolicy: OnFailure
+

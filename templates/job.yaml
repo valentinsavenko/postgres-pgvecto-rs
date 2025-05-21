@@ -1,0 +1,57 @@
+{{- if .Values.restore.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}-postgres-restore"
+  namespace: {{ .Values.namespace }}
+spec:
+  template:
+    spec:
+      containers:
+        - name: restore
+          image: "{{ .Values.restore.image.repository }}:{{ .Values.restore.image.tag }}"
+          command:
+            - sh
+            - -c
+            - |
+              BACKUP_FILE=$(ls -t /backups/${HELM_RELEASE_NAME}_backup_*.sql | head -n 1)
+              if [ -z "$BACKUP_FILE" ]; then
+                echo "Error: No backup file found in /backups"
+                exit 1
+              fi
+              psql -h ${DB_HOSTNAME} -U ${POSTGRES_USER} -c "DROP postgrespg IF EXISTS ${POSTGRES_DB};"
+              psql -h ${DB_HOSTNAME} -U ${POSTGRES_USER} -c "CREATE postgrespg ${POSTGRES_DB};"
+              psql -h ${DB_HOSTNAME} -U ${POSTGRES_USER} -d ${POSTGRES_DB} -f "$BACKUP_FILE"
+              echo "Restored backup: $BACKUP_FILE"
+          env:
+            - name: HELM_RELEASE_NAME
+              value: "{{ .Release.Name }}"
+            - name: DB_HOSTNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-db-env"
+                  key: DB_HOSTNAME
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-db-env"
+                  key: DB_USERNAME
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-db-env"
+                  key: DB_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-db-env"
+                  key: DB_postgrespg_NAME
+          volumeMounts:
+            - name: backup-storage
+              mountPath: /backups
+      volumes:
+        - name: backup-storage
+          persistentVolumeClaim:
+            claimName: postgres-db-pvc
+      restartPolicy: OnFailure
+{{- end }}

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Release.Name }}-postgrespg"
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: postgrespg
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: postgrespg
+  ports:
+    - name: tcp-postgresql
+      port: {{ .Values.service.port }}
+      targetPort: 5432

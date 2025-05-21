@@ -1,0 +1,53 @@
+
+# PostgreSQL Deployment Configuration
+postgres:
+  image:
+    repository: docker.io/tensorchord/pgvecto-rs
+    tag: pg16-v0.2.1
+    pullPolicy: Always
+  replicas: 1
+  resources: {}
+  # resources:
+  #   limits:
+  #     cpu: "1"
+  #     memory: "2Gi"
+  #   requests:
+  #     cpu: "500m"
+  #     memory: "1Gi"
+
+# Backup CronJob Configuration
+backup:
+  schedule: "0 2 * * 0" # Every Sunday at 2 AM
+  maxBackups: 10
+  image:
+    repository: docker.io/tensorchord/pgvecto-rs
+    tag: pg16-v0.2.1
+
+# Restore Job Configuration
+restore:
+  enabled: false # this job should only be triggered manually
+  image:
+    repository: docker.io/tensorchord/pgvecto-rs
+    tag: pg16-v0.2.1
+
+# Persistent Volume and Claim Configuration
+persistence:
+  storageSize: "10Gi"
+  accessModes:
+    - ReadWriteMany
+  pv:
+    hostPath: /tmp
+    reclaimPolicy: Retain
+  storageClassName: "local-path"
+
+# Service Configuration
+service:
+  type: ClusterIP
+  port: 5432
+
+# Secret Configuration
+secrets:
+  dbHostname: main
+  dbName: postgres
+  dbUsername: postgres
+  dbPassword: "CHANGEME!!!"
