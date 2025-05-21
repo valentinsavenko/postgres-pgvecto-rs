@@ -8,7 +8,7 @@ The data AND backups are all stored in a single PV for now, so make sure it's a 
 
 ```bash
 # install
-CHART=https://github.com/valentinsavenko/postgres-pgvecto-rs/raw/refs/heads/main/postgres-pgvecto-rs-0.1.6.tgz
+CHART=https://github.com/valentinsavenko/postgres-pgvecto-rs/raw/refs/heads/main/postgres-pgvecto-rs-0.1.7.tgz
 RELEASE_NAME=psql-ps
 
 
