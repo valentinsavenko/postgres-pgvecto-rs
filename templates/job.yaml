@@ -44,7 +44,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: "{{ .Release.Name }}-db-env"
-                  key: DB_postgrespg_NAME
+                  key: DB_DATABASE_NAME
           volumeMounts:
             - name: backup-storage
               mountPath: /backups
