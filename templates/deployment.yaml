@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "{{ .Release.Name }}-postgrespg"
-  namespace: {{ .Values.namespace }}
   labels:
     app: "{{ .Release.Name }}-postgrespg"
 spec:

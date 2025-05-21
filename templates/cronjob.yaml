@@ -2,7 +2,6 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: "{{ .Release.Name }}-postgres-backup"
-  namespace: {{ .Values.namespace }}
 spec:
   schedule: {{ .Values.backup.schedule | quote }}
   jobTemplate:
