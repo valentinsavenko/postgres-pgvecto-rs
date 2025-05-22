@@ -28,22 +28,22 @@ spec:
             - name: DB_HOSTNAME
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Release.Name }}-db-env"
+                  name: "{{ .Release.Name }}-env"
                   key: DB_HOSTNAME
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Release.Name }}-db-env"
+                  name: "{{ .Release.Name }}-env"
                   key: DB_USERNAME
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Release.Name }}-db-env"
+                  name: "{{ .Release.Name }}-env"
                   key: DB_PASSWORD
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Release.Name }}-db-env"
+                  name: "{{ .Release.Name }}-env"
                   key: DB_DATABASE_NAME
           volumeMounts:
             - name: backup-storage

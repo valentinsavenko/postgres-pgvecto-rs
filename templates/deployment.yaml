@@ -24,17 +24,17 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Release.Name }}-db-env"
+                  name: "{{ .Release.Name }}-env"
                   key: DB_USERNAME
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Release.Name }}-db-env"
+                  name: "{{ .Release.Name }}-env"
                   key: DB_PASSWORD
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: "{{ .Release.Name }}-db-env"
+                  name: "{{ .Release.Name }}-env"
                   key: DB_DATABASE_NAME
           volumeMounts:
             - name: pgdata
