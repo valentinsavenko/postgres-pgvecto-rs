@@ -15,10 +15,63 @@ spec:
                 - sh
                 - -c
                 - |
-                  BACKUP_FILE=/backups/${HELM_RELEASE_NAME}_backup_$(date +%Y-%m-%d_%H-%M-%S).sql
-                  pg_dump -h ${DB_HOSTNAME} -U ${POSTGRES_USER} ${POSTGRES_DB} > $BACKUP_FILE
-                  echo "Backup created: $BACKUP_FILE"
-                  ls -t /backups/${HELM_RELEASE_NAME}_backup_*.sql | tail -n +{{ add .Values.backup.maxBackups 1 }} | xargs -I {} rm -f {}
+                  set -e
+
+                  BACKUP_DIR=/backups/${HELM_RELEASE_NAME}_backup_$(date +%Y-%m-%d_%H-%M-%S)
+                  mkdir -p "$BACKUP_DIR"
+
+                  echo "Starting backup..."
+
+                  # Step 1: Start consistent backup (forces checkpoint)
+                  echo "Starting backup in PostgreSQL..."
+                  psql -h ${DB_HOSTNAME} -U ${POSTGRES_USER} -d postgres -c "SELECT pg_start_backup('backup', true);"
+
+                  # Step 2: Create full base backup
+                  echo "Creating base backup..."
+                  pg_basebackup -h ${DB_HOSTNAME} -U ${POSTGRES_USER} -D "$BACKUP_DIR" -Ft -z -P
+
+                  # Step 3: Stop backup
+                  echo "Stopping backup..."
+                  psql -h ${DB_HOSTNAME} -U ${POSTGRES_USER} -d postgres -c "SELECT pg_stop_backup();"
+
+                  echo "Backup created: $BACKUP_DIR"
+
+                  # Step 4: Verify backup integrity
+                  if [ "{{ .Values.backup.verifyEnabled }}" = "true" ]; then
+                    echo "Verifying backup integrity..."
+
+                    # Check base.tar.gz exists and is non-empty
+                    if [ ! -s "$BACKUP_DIR/base.tar.gz" ]; then
+                      echo "ERROR: base.tar.gz is missing or empty"
+                      exit 1
+                    fi
+
+                    # Check tar integrity
+                    if ! tar -tzf "$BACKUP_DIR/base.tar.gz" > /dev/null 2>&1; then
+                      echo "ERROR: base.tar.gz is corrupted"
+                      exit 1
+                    fi
+
+                    # Check pg_wal.tar.gz exists and is non-empty
+                    if [ ! -s "$BACKUP_DIR/pg_wal.tar.gz" ]; then
+                      echo "ERROR: pg_wal.tar.gz is missing or empty"
+                      exit 1
+                    fi
+
+                    # Check tar integrity
+                    if ! tar -tzf "$BACKUP_DIR/pg_wal.tar.gz" > /dev/null 2>&1; then
+                      echo "ERROR: pg_wal.tar.gz is corrupted"
+                      exit 1
+                    fi
+
+                    echo "Backup verification passed."
+                  fi
+
+                  # Step 5: Rotate old backups (only after successful verification)
+                  echo "Rotating old backups..."
+                  ls -drt /backups/${HELM_RELEASE_NAME}_backup_* 2>/dev/null | head -n -{{ .Values.backup.maxBackups }} | xargs -r rm -rf
+
+                  echo "Backup complete."
               env:
                 - name: HELM_RELEASE_NAME
                   value: "{{ .Release.Name }}"
@@ -50,4 +103,3 @@ spec:
               persistentVolumeClaim:
                 claimName: "{{ .Release.Name }}-postgres-db-pvc"
           restartPolicy: OnFailure
-

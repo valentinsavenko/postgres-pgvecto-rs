@@ -3,7 +3,7 @@
 postgres:
   image:
     repository: docker.io/tensorchord/pgvecto-rs
-    tag: pg16-v0.2.1
+    tag: pg16-v0.3.0
     pullPolicy: Always
   replicas: 1
   resources: {}
@@ -17,18 +17,19 @@ postgres:
 
 # Backup CronJob Configuration
 backup:
-  schedule: "0 2 * * 0" # Every Sunday at 2 AM
+  schedule: "0 3 * * 0" # Every Sunday at 3 AM
   maxBackups: 10
+  verifyEnabled: true # Verify backup integrity before rotating old backups
   image:
     repository: docker.io/tensorchord/pgvecto-rs
-    tag: pg16-v0.2.1
+    tag: pg16-v0.3.0
 
 # Restore Job Configuration
 restore:
   enabled: false # this job should only be triggered manually
   image:
     repository: docker.io/tensorchord/pgvecto-rs
-    tag: pg16-v0.2.1
+    tag: pg16-v0.3.0
 
 # Persistent Volume and Claim Configuration
 persistence:

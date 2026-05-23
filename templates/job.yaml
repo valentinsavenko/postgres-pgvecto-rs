@@ -13,15 +13,56 @@ spec:
             - sh
             - -c
             - |
-              BACKUP_FILE=$(ls -t /backups/${HELM_RELEASE_NAME}_backup_*.sql | head -n 1)
-              if [ -z "$BACKUP_FILE" ]; then
-                echo "Error: No backup file found in /backups"
+              set -e
+
+              BACKUP_DIR=$(ls -drt /backups/${HELM_RELEASE_NAME}_backup_* 2>/dev/null | tail -n 1)
+              if [ -z "$BACKUP_DIR" ]; then
+                echo "Error: No backup directory found in /backups"
                 exit 1
               fi
-              psql -h ${DB_HOSTNAME} -U ${POSTGRES_USER} -c "DROP postgrespg IF EXISTS ${POSTGRES_DB};"
-              psql -h ${DB_HOSTNAME} -U ${POSTGRES_USER} -c "CREATE postgrespg ${POSTGRES_DB};"
-              psql -h ${DB_HOSTNAME} -U ${POSTGRES_USER} -d ${POSTGRES_DB} -f "$BACKUP_FILE"
-              echo "Restored backup: $BACKUP_FILE"
+
+              echo "Found backup: $BACKUP_DIR"
+
+              # Verify backup exists and is non-empty
+              if [ ! -s "$BACKUP_DIR/base.tar.gz" ]; then
+                echo "ERROR: base.tar.gz is missing or empty"
+                exit 1
+              fi
+
+              # Extract backup to a temp location first
+              TEMP_DIR=$(mktemp -d)
+              echo "Extracting backup to temp directory..."
+              tar -xzf "$BACKUP_DIR/base.tar.gz" -C "$TEMP_DIR"
+
+              # Verify extracted data
+              if [ ! -d "$TEMP_DIR/base" ]; then
+                echo "ERROR: Extracted backup does not contain expected base directory"
+                exit 1
+              fi
+
+              echo "Backup extracted successfully."
+
+              # Copy backup_label to temp directory for reference
+              if [ -f "$BACKUP_DIR/backup_label" ]; then
+                cp "$BACKUP_DIR/backup_label" "$TEMP_DIR/"
+              fi
+
+              # Replace PostgreSQL data directory
+              PGDATA=/var/lib/postgresql/data/postgres
+              echo "Replacing PostgreSQL data directory at $PGDATA..."
+              rm -rf "$PGDATA"
+              cp -a "$TEMP_DIR/base" "$PGDATA"
+
+              # Copy backup_label if present
+              if [ -f "$TEMP_DIR/backup_label" ]; then
+                cp "$TEMP_DIR/backup_label" "$PGDATA/"
+              fi
+
+              # Clean up temp directory
+              rm -rf "$TEMP_DIR"
+
+              echo "Restore complete. PostgreSQL data directory has been replaced."
+              echo "Restart the PostgreSQL deployment to apply the restored data."
           env:
             - name: HELM_RELEASE_NAME
               value: "{{ .Release.Name }}"
@@ -48,8 +89,14 @@ spec:
           volumeMounts:
             - name: backup-storage
               mountPath: /backups
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+              subPath: postgres
       volumes:
         - name: backup-storage
+          persistentVolumeClaim:
+            claimName: "{{ .Release.Name }}-postgres-db-pvc"
+        - name: pgdata
           persistentVolumeClaim:
             claimName: "{{ .Release.Name }}-postgres-db-pvc"
       restartPolicy: OnFailure
