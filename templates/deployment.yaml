@@ -14,6 +14,26 @@ spec:
       labels:
         app: "{{ .Release.Name }}-postgrespg"
     spec:
+      initContainers:
+        - name: configure-postgres
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /var/lib/postgresql/data/postgres
+              cp /etc/postgresql-conf/pg_hba.conf /var/lib/postgresql/data/postgres/pg_hba.conf
+              chown 999:999 /var/lib/postgresql/data/postgres/pg_hba.conf
+              chmod 600 /var/lib/postgresql/data/postgres/pg_hba.conf
+              echo "Copied and configured pg_hba.conf"
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+              subPath: postgres
+            - name: postgres-conf
+              mountPath: /etc/postgresql-conf
       containers:
         - name: postgres
           image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
@@ -40,9 +60,13 @@ spec:
             - name: pgdata
               mountPath: /var/lib/postgresql/data
               subPath: postgres
+            - name: postgres-conf
+              mountPath: /etc/postgresql-conf
           resources: {{ toYaml .Values.postgres.resources | nindent 12 }}
       volumes:
         - name: pgdata
           persistentVolumeClaim:
             claimName: "{{ .Release.Name }}-postgres-db-pvc"
-
+        - name: postgres-conf
+          configMap:
+            name: "{{ .Release.Name }}-postgrespg-conf"
