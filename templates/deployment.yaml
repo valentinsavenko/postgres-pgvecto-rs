@@ -14,30 +14,19 @@ spec:
       labels:
         app: "{{ .Release.Name }}-postgrespg"
     spec:
-      initContainers:
-        - name: configure-postgres
-          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
-          command:
-            - sh
-            - -c
-            - |
-              mkdir -p /var/lib/postgresql
-              cp /etc/postgresql-conf/pg_hba.conf /var/lib/postgresql/pg_hba.conf
-              chown 999:999 /var/lib/postgresql/pg_hba.conf
-              chmod 600 /var/lib/postgresql/pg_hba.conf
-              echo "Copied and configured pg_hba.conf"
-          securityContext:
-            runAsUser: 0
-          volumeMounts:
-            - name: pgdata
-              mountPath: /var/lib/postgresql/data
-              subPath: postgres
-            - name: postgres-conf
-              mountPath: /etc/postgresql-conf
       containers:
         - name: postgres
           image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
           imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              # Copy custom pg_hba.conf to data directory
+              cp /etc/postgresql-conf/pg_hba.conf /var/lib/postgresql/pg_hba.conf
+              chown 999:999 /var/lib/postgresql/pg_hba.conf
+              chmod 600 /var/lib/postgresql/pg_hba.conf
+              exec postgres
           ports:
             - containerPort: 5432
           env:

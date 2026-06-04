@@ -71,3 +71,10 @@ backup:
   maxBackups: 10          # Number of backups to keep
   verifyEnabled: true     # Verify backup integrity before rotation
 ```
+
+# HBA settings for backup
+
+# Check which pg_hba.conf PostgreSQL is actually using
+psql -U postgres -c "SHOW hba_file;"
+# See the parsed rules that PostgreSQL loaded
+psql -U postgres -c "SELECT * FROM pg_hba_file_rules;"
