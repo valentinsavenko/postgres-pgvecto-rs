@@ -21,10 +21,10 @@ spec:
             - sh
             - -c
             - |
-              mkdir -p /var/lib/postgresql/data/postgres
-              cp /etc/postgresql-conf/pg_hba.conf /var/lib/postgresql/data/postgres/pg_hba.conf
-              chown 999:999 /var/lib/postgresql/data/postgres/pg_hba.conf
-              chmod 600 /var/lib/postgresql/data/postgres/pg_hba.conf
+              mkdir -p /var/lib/postgresql
+              cp /etc/postgresql-conf/pg_hba.conf /var/lib/postgresql/pg_hba.conf
+              chown 999:999 /var/lib/postgresql/pg_hba.conf
+              chmod 600 /var/lib/postgresql/pg_hba.conf
               echo "Copied and configured pg_hba.conf"
           securityContext:
             runAsUser: 0
