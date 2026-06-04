@@ -22,17 +22,9 @@ spec:
 
                   echo "Starting backup..."
 
-                  # Step 1: Start consistent backup (forces checkpoint)
-                  echo "Starting backup in PostgreSQL..."
-                  psql -h ${DB_HOSTNAME} -U ${POSTGRES_USER} -d postgres -c "SELECT pg_start_backup('backup', true);"
-
-                  # Step 2: Create full base backup
+                  # Step 1: Create full base backup
                   echo "Creating base backup..."
                   pg_basebackup -h ${DB_HOSTNAME} -U ${POSTGRES_USER} -D "$BACKUP_DIR" -Ft -z -P
-
-                  # Step 3: Stop backup
-                  echo "Stopping backup..."
-                  psql -h ${DB_HOSTNAME} -U ${POSTGRES_USER} -d postgres -c "SELECT pg_stop_backup();"
 
                   echo "Backup created: $BACKUP_DIR"
 
